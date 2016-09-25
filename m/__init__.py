@@ -1,6 +1,7 @@
 import re
 import json
 import webob
+from functools import wraps
 from collections import namedtuple
 from webob.dec import wsgify
 from webob.exc import HTTPNotFound
@@ -27,10 +28,18 @@ Route = namedtuple('Route', ['pattern', 'methods', 'casts', 'handler'])
 
 
 class Router:
-    def __init__(self, prefix='', domain=None):
+    def __init__(self, prefix='', domain=None, filters=None):
         self.routes = []
         self.domain = domain
         self.prefix = prefix
+        if filters is None:
+            filters = []
+        self.filters = []
+        for fl in filters:
+            if isinstance(fl, Filter):
+                self.filters.append(fl)
+            else:
+                raise Exception('{} is not a Filter'.format(fl))
 
     def _route(self, rule, methods, handler):
         pattern, casts = self._rule_parse(rule)
@@ -82,6 +91,17 @@ class Router:
     def _prefix_match(self, request):
         return request.path.startswith(self.prefix)
 
+    def _apply_filter(self, handler):
+        @wraps(handler)
+        def apply(ctx, request):
+            for fl in self.filters:
+                request = fl.before_request(ctx, request)
+            response = handler(ctx, request)
+            for fl in reversed(self.filters):
+                response = fl.after_request(ctx, request, response)
+            return response
+        return apply
+
     def match(self, request):
         if self._domain_match(request) and self._prefix_match(request):
             for route in self.routes:
@@ -91,7 +111,22 @@ class Router:
                         request.args = {}
                         for k, v in m.groupdict().items():
                             request.args[k] = route.casts[k](v)
-                        return route.handler
+                        return self._apply_filter(route.handler)
+
+    def add_filter(self, filter):
+        self.filters.append(filter)
+
+    def before_request(self, fn):
+        fl = Filter()
+        fl.before_request = fn
+        self.add_filter(fl)
+        return fn
+
+    def after_request(self, fn):
+        fl = Filter()
+        fl.after_request = fn
+        self.add_filter(fl)
+        return fn
 
 
 class Request(webob.Request):
@@ -119,3 +154,11 @@ class Application:
                 # post process response
                 return res
         raise HTTPNotFound(detail='no handler match')
+
+
+class Filter:
+    def before_request(self, ctx, request):
+        return request
+
+    def after_request(self, ctx, request, response):
+        return response
