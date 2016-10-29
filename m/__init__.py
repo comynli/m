@@ -135,14 +135,20 @@ class Request(webob.Request):
 
 
 class Application:
-    def __init__(self, routers=None, **options):
+    def __init__(self, routers=None, **attributes):
         if routers is None:
             routers = []
         self.routers = routers
-        self.options = options
+        self.__attrs = attributes
 
     def add_router(self, router):
         self.routers.append(router)
+
+    def __getattr__(self, name):
+        try:
+            return self.__attrs[name]
+        except KeyError:
+            raise AttributeError('no attr name {}'.format(name))
 
     @wsgify(RequestClass=Request)
     def __call__(self, request):
