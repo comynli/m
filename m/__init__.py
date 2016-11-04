@@ -1,10 +1,15 @@
 import re
+import os
+import sys
 import json
 import webob
 from functools import wraps
 from collections import namedtuple
+from pyhocon import ConfigFactory
+from pyhocon.config_tree import ConfigTree
 from webob.dec import wsgify
 from webob.exc import HTTPNotFound
+from .ext import Extension
 
 
 PATTERNS = {
@@ -135,20 +140,26 @@ class Request(webob.Request):
 
 
 class Application:
-    def __init__(self, routers=None, **attributes):
+    def __init__(self, routers=None, **kwargs):
+        self.extensions = {}
+        self.kwargs = kwargs
+        default_config_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'application.conf')
+        config_file = self.kwargs.pop('config', default_config_file)
+        if os.path.exists(config_file):
+            self.config = ConfigFactory.parse_file(config_file)
+        else:
+            self.config = ConfigTree()
         if routers is None:
             routers = []
         self.routers = routers
-        self.__attrs = attributes
 
     def add_router(self, router):
         self.routers.append(router)
 
-    def __getattr__(self, name):
-        try:
-            return self.__attrs[name]
-        except KeyError:
-            raise AttributeError('no attr name {}'.format(name))
+    def register_extension(self, instance):
+        if isinstance(instance, Extension):
+            instance.initialize(self)
+            self.extensions[instance.__class__.__name__] = instance
 
     @wsgify(RequestClass=Request)
     def __call__(self, request):
@@ -168,3 +179,4 @@ class Filter:
 
     def after_request(self, ctx, request, response):
         return response
+
