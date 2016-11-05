@@ -54,7 +54,7 @@ class Pagination:
         self.has_prev = self.page > 1
         self.has_next = self.page < self.pages
 
-    def dictify(self):
+    def dictify(self, relationships=True, exclude=None):
         return {
             'page': self.page,
             'size': self.size,
@@ -62,7 +62,7 @@ class Pagination:
             'pages': self.pages,
             'has_prev': self.has_prev,
             'has_next': self.has_next,
-            'items': [item.dictify() for item in self.items]
+            'items': [item.dictify(relationships=relationships, exclude=exclude) for item in self.items]
         }
 
 
