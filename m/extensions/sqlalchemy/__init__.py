@@ -13,7 +13,7 @@ class Model:
     query_class = None
     query = None
 
-    def dictify(self, found=None):
+    def dictify(self, found=None, relationships=True):
         if found is None:
             found = set()
         result = {}
@@ -22,18 +22,19 @@ class Model:
         for column in columns:
             value = getattr(self, column)
             if isinstance(value, datetime):
-                result[column] = datetime.isoformat()
+                result[column] = value.isoformat()
             else:
                 result[column] = value
-        for name, relation in mapper.relationships.items():
-            if relation not in found:
-                found.add(relation)
-                related_obj = getattr(self, name)
-                if related_obj is not None:
-                    if relation.uselist:
-                        result[name] = [o.jsonify(found=found) for o in related_obj]
-                    else:
-                        result[name] = related_obj.jsonify()
+        if relationships:
+            for name, relation in mapper.relationships.items():
+                if relation not in found:
+                    found.add(relation)
+                    related_obj = getattr(self, name)
+                    if related_obj is not None:
+                        if relation.uselist:
+                            result[name] = [o.jsonify(found=found) for o in related_obj]
+                        else:
+                            result[name] = related_obj.jsonify()
         return result
 
 
