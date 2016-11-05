@@ -31,16 +31,16 @@ class Model:
                 result[column] = value
         if relationships:
             for name, relation in mapper.relationships.items():
-                print(dir(relation))
-                print(relation.__dict__)
                 if relation not in found:
                     found.add(relation)
                     related_obj = getattr(self, name)
+                    prefix = '{}.'.format(name)
                     if related_obj is not None:
+                        _exclude = {x.replace(prefix, '', 1) for x in exclude if x.startswith(prefix)}
                         if relation.uselist:
-                            result[name] = [o.dictify(found=found) for o in related_obj]
+                            result[name] = [o.dictify(found=found, exclude=_exclude) for o in related_obj]
                         else:
-                            result[name] = related_obj.dictify()
+                            result[name] = related_obj.dictify(found=found, exclude=_exclude)
         return result
 
 
