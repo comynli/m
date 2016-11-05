@@ -13,13 +13,17 @@ class Model:
     query_class = None
     query = None
 
-    def dictify(self, found=None, relationships=True):
+    def dictify(self, found=None, relationships=True, exclude=None):
         if found is None:
             found = set()
+        if exclude is None:
+            exclude = set()
         result = {}
         mapper = class_mapper(self.__class__)
         columns = [column.key for column in mapper.columns]
         for column in columns:
+            if column in exclude:
+                continue
             value = getattr(self, column)
             if isinstance(value, datetime):
                 result[column] = value.isoformat()
@@ -27,6 +31,8 @@ class Model:
                 result[column] = value
         if relationships:
             for name, relation in mapper.relationships.items():
+                print(dir(relation))
+                print(relation.__dict__)
                 if relation not in found:
                     found.add(relation)
                     related_obj = getattr(self, name)
