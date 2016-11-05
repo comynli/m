@@ -28,6 +28,10 @@ class AuthenticationFilter(Filter):
 
     def before_request(self, ctx, request):
         request.security = self.provider_cls(ctx, request)
+        try:
+            request.principal = request.security.principal
+        except HTTPUnauthorized:
+            request.principal = None
         return request
 
 
