@@ -146,8 +146,7 @@ class SQLAlchemy(Extension):
 
     @property
     def session(self):
-        if self._session is not None:
+        if self.initialized:
             return self._session
-
-        return self._session
+        raise Exception('not initialized')
 
