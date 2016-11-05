@@ -32,9 +32,9 @@ class Model:
                     related_obj = getattr(self, name)
                     if related_obj is not None:
                         if relation.uselist:
-                            result[name] = [o.jsonify(found=found) for o in related_obj]
+                            result[name] = [o.dictify(found=found) for o in related_obj]
                         else:
-                            result[name] = related_obj.jsonify()
+                            result[name] = related_obj.dictify()
         return result
 
 
