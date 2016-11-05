@@ -152,6 +152,7 @@ class Application:
         if routers is None:
             routers = []
         self.routers = routers
+        self.filters = []
 
     def add_router(self, router):
         self.routers.append(router)
@@ -161,14 +162,19 @@ class Application:
             instance.initialize(self)
             self.extensions[instance.__class__.__name__] = instance
 
+    def add_filter(self, filter):
+        self.filters.append(filter)
+
     @wsgify(RequestClass=Request)
     def __call__(self, request):
         for router in self.routers:
             handler = router.match(request)
             if handler:
-                # pre process request
+                for fl in self.filters:
+                    request = fl.before_request(self, request)
                 res = handler(self, request)
-                # post process response
+                for fl in reversed(self.filters):
+                    res = fl.after_request(self, request, res)
                 return res
         raise HTTPNotFound(detail='no handler match')
 
