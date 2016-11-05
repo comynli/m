@@ -1,5 +1,3 @@
-
-
 class Extension:
     def __init__(self, **kwargs):
         self.app = kwargs.get('app')
