@@ -4,8 +4,9 @@ from webob.exc import HTTPUnauthorized, HTTPForbidden
 
 
 class AuthenticationProvider:
-    def __init__(self, request):
+    def __init__(self, ctx, request):
         self.request = request
+        self.ctx = ctx
 
     @property
     def principal(self):
@@ -26,7 +27,7 @@ class AuthenticationFilter(Filter):
         self.provider_cls = cls
 
     def before_request(self, ctx, request):
-        request.security = self.provider_cls(request)
+        request.security = self.provider_cls(ctx, request)
         return request
 
 
