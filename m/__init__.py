@@ -42,7 +42,7 @@ class Application:
 
     def add_filter(self, fl):
         if isinstance(fl, Filter):
-            self.filters.append(filter)
+            self.filters.append(fl)
 
     @wsgify(RequestClass=Request)
     def __call__(self, request):
