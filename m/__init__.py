@@ -35,14 +35,24 @@ class Application:
         if isinstance(r, Router):
             self.routers.append(r)
 
-    def register_extension(self, instance):
+    def register_extension(self, instance, name=None):
         if isinstance(instance, Extension):
+            if name is None:
+                name = instance.__class__.__name__
             instance.initialize(self)
-            self.extensions[instance.__class__.__name__] = instance
+            self.extensions[name] = instance
 
     def add_filter(self, fl):
         if isinstance(fl, Filter):
             self.filters.append(fl)
+    
+    def __getattr__(self, name):
+        if name in self.extensions.keys():
+            return self.extensions[name]
+        if name in self.kwargs.keys():
+            return self.kwargs[name]
+        raise AttributeError(name)
+            
 
     @wsgify(RequestClass=Request)
     def __call__(self, request):
